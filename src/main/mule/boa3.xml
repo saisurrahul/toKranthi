@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="0f55d157-856f-473b-b2d3-772bad74eb99" />
+	<sub-flow name="boa3Sub_Flow" doc:id="847dbab5-ba6a-4ad6-996f-423dd2112771" >
+		<logger level="INFO" doc:name="Logger" doc:id="79fa72a6-1657-4b3f-a65a-0f5217568abe" message="boa3"/>
+		<ee:transform doc:name="Transform Message" doc:id="ef831d60-fd56-44d9-94c8-145a898e679a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="1c4cb44d-0245-47b9-851c-59be2cf357d1" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="tmaAccts" ><![CDATA[output application/json
+
+var mAccounts = vars.pqRequest.portfolioGroups default [] map((req,ind) -> {
+	"mAccts" : req.mailingAccounts 
+	filter ($.accountProduct.primaryServiceTypeCode == "3") default []
+})
+
+var tmaAccts = if (mAccounts != null) (flatten (mAccounts.mAccts)) else []
+
+---
+tmaAccts]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="82d0de2a-367c-470c-9031-726bbb5e3e4a" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="isTMARequest" ><![CDATA[%dw 2.0
+output application/json
+---
+if(sizeOf(vars.tmaAccts default []) >0) "true" else "false"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="bc3721ca-20c1-4da5-87be-9fac38c8cc84" config-ref="File_Config" path="C:\Users\Gouthami\Desktop\file"/>
+		<ee:transform doc:name="Transform Message" doc:id="bf223743-adfa-4801-a54d-ebd5c1cc4963" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.isTMARequest]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="8a90585e-fd2b-4142-900b-35b009f49cfd" >
+			<when expression='#[vars.isTMARequest == "true"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="8aa0f92a-0813-43ec-a78c-1fff90025c0c" message="true"/>
+				<ee:transform doc:name="Transform Message" doc:id="0106ab82-c703-4e34-a320-50f2287be9d6">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<when expression='#[vars.isTMARequest == "false"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="c4806aa1-c43d-4c05-8863-0850bc0099d5" message='#["false"]'/>
+				<flow-ref doc:name="Flow Reference" doc:id="2e754713-659f-484f-80eb-4715b072ab94" name="boa4Sub_Flow"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="d9d42a48-5d5e-480a-b45a-8ac9f2e7a300" message="default"/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

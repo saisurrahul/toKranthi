@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c4f35121-4e05-4355-b730-4f6b9784dd87" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="boaFlow" doc:id="ac63d39f-92e4-40cd-b135-fef3ac2d52dd" >
+		<http:listener doc:name="Listener" doc:id="76fa3e7c-25e7-461e-a225-8cd773565134" config-ref="HTTP_Listener_config" path="/boa"/>
+		<logger level="INFO" doc:name="Logger" doc:id="4401f703-2939-4c92-8ff9-9e1ddd16c529" message="initian log"/>
+		<flow-ref doc:name="Flow Reference" doc:id="62dac4fa-a593-4888-865d-fa2c86e660b5" name="boa2Flow"/>
+	</flow>
+</mule>

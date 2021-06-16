@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<sub-flow name="boa4Sub_Flow" doc:id="e7c42249-6122-4946-a565-93e4dacd8c91" >
+		<logger level="INFO" doc:name="Logger" doc:id="0d136039-aac0-4d3d-b694-174e9416b230" message="boa4"/>
+		<ee:transform doc:name="Transform Message" doc:id="8d724281-e4d9-4c3f-a39f-ad446f5dd5c6" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="portvar" ><![CDATA[%dw 2.0
+output application/json
+
+var portvar = if (vars.pqRequest.portfolioGroups[0].houseHoldAccounts != null
+	and (sizeOf(vars.pqRequest.portfolioGroups[0].houseHoldAccounts)) > 0
+) "true" else "false"
+---
+portvar]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="60c610c5-90d0-46a4-96d1-30b24b992074" message="#[output application/json ---vars.portvar]"/>
+		<ee:transform doc:name="Transform Message" doc:id="85871db9-8899-4238-865f-4fdddd9ddf12" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+var pgGroups = vars.pqRequest.portfolioGroups default [] map ((portfolioGroup,portfolioGroupIndex) -> {
+	
+	"customerIdentifiers" : (portfolioGroup.groupOwners default [] map ((groupOwner,groupOwnerIndex) -> {
+		"masterProfileId" : groupOwner.customerIdentifier.masterProfileId
+		
+	}))
+	
+})
+
+var ids = pgGroups default [] map {
+id : $.customerIdentifiers
+}
+
+var idens= flatten (ids.id)
+
+var identifiers = idens distinctBy ((item, index) -> item.masterProfileId)
+---
+identifiers]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="idenvar" ><![CDATA[%dw 2.0
+output application/json
+---
+if (payload != null) "false" else "true"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="35ec7204-75cf-4ac8-8db0-688640a7eb98" message="#[output application/json --- vars.idenvar]"/>
+		<choice doc:name="Choice" doc:id="4233d3f1-7fd0-4d89-a675-4555cf63f636" >
+			<when expression='#[vars.idenvar == "true"]'>
+				<ee:transform doc:name="Transform Message" doc:id="b16261f0-c63c-4326-8031-0dbbe3666573" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+/*
+<-- enters into ownergroups payload
+ */
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<when expression='#[vars.idenvar == "false"]'>
+				<ee:transform doc:name="Transform Message" doc:id="07802126-0ea4-44a6-bf1a-e9163194846b" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	
+	"message" : "enters into households"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="Flow Reference" doc:id="eaf26147-73df-4b5b-b68e-af8c6cfffa5b" name="boa5Flow"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="13765c97-4197-4072-a850-28626007aa1d" message="default"/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

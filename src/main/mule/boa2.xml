@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="boa2Flow" doc:id="8a0a6c03-add4-4b38-9d90-2d41aecbaa77" >
+		<logger level="INFO" doc:name="Logger" doc:id="de296ad1-bdd0-40af-abec-51ca995de44a" message="initial logger in first ref flow"/>
+		<ee:transform doc:name="Transform Message" doc:id="7d790310-7071-4f1c-8d3d-e1c54c6cf4a0">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="pqRequest" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="7ea4530b-f998-44e9-a0bf-345f7983d7fb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.pqRequest]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="0f1ab93d-eb9e-4256-bd3a-f735fb72d56a" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="isReqValid" ><![CDATA[%dw 2.0
+output application/json
+
+var isReqValid = if(vars.pqRequest != null 
+	and vars.pqRequest.portfolioGroups != null
+) "true" else "false"
+---
+
+isReqValid]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="26e751e1-ce03-4b64-ba0d-29b886c6c1ca" message="#[vars.isReqValid]"/>
+		<choice doc:name="Choice" doc:id="559cd00a-1174-45b3-8008-5458b37d61c7" >
+			<when expression='#[vars.isReqValid == "true"]'>
+				<ee:transform doc:name="Transform Message" doc:id="6999ae09-343d-4e67-9924-fdc943052bcf" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.isReqValid]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="Flow Reference" doc:id="a3ae3af7-0da2-46e2-9436-10e5d0be2b90" name="boa3Sub_Flow"/>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="6a4fc10c-b5d5-4f09-b487-ccfd559f8ebe" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "enters into default"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="be8c2823-eb60-4e35-a027-17d7933801d9" message="default log now"/>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

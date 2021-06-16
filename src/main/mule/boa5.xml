@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="boa5Flow" doc:id="94d4af39-dbe8-48ed-9929-514bcb84a3de" >
+		<logger level="INFO" doc:name="Logger" doc:id="771df0f1-f319-47e7-83f1-e63dc17b3395" message="#[output application/json --- payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="eea3c91a-d14a-42de-abe8-59a188ee7816" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+var hhAccts = if (vars.pqRequest.portfolioGroups != null and
+	vars.pqRequest.portfolioGroups.houseHoldAccounts != null) "true" else "false"
+
+var hhvalid = vars.pqRequest.portfolioGroups.houseHoldAccounts default [] 
+map ((item,index) -> {
+
+    "uniqueaccts" : (item.accountIdentifier) 
+
+}) 
+
+var more2 = vars.pqRequest.portfolioGroups.houseHoldAccounts default [] 
+map((item,index) -> {
+
+"lets" : item.accountIdentifier map ((item, index) -> {
+
+    "acts" : item.accountNumber,
+    "ec" : item.entityCode
+}) filter ((item, index) -> item.ec == "059" )
+
+})
+---
+hhvalid.uniqueaccts]]></ee:set-payload>
+			</ee:message>
+			<ee:variables />
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="d601cade-9715-4484-9f80-3e1b1e5ed187" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="01a5b072-47ed-4b1e-8ecb-96b22c7b519e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="aa9e23ff-d087-4c89-938a-2508e07786ca" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="hhfilter" ><![CDATA[%dw 2.0
+output application/json
+
+var hhfilter = payload map ((item, index) -> {
+
+    "accountnumbers" : item.accountNumber,
+    "ec" : item.entityCode
+})  filter ($.ec == "059")
+
+---
+hhfilter]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="f77c5eff-1071-44ed-b399-3c31d1f6d317" message="#[output application/json --- payload]"/>
+	</sub-flow>
+</mule>
